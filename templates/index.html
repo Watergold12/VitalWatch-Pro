@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VitalWatch Pro — Health Vitals Monitor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="logo">VitalWatch Pro</div>
+    <div class="patient-info">
+      <div>
+        <div class="pat-name">{{ patient.name }}</div>
+        <div class="pat-meta">{{ patient.gender }} · {{ patient.age }}Y · BED {{ patient.bed }} · {{ patient.doctor }}</div>
+      </div>
+      <div class="status-pill">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">STABLE</span>
+      </div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- VITALS GRID -->
+    <div class="vitals-grid">
+
+      <!-- Heart Rate -->
+      <div class="vital-card" id="card-hr">
+        <div class="vc-label">HEART RATE</div>
+        <div class="vc-value-row">
+          <div class="vc-value" id="val-hr">72</div>
+          <div class="vc-unit">BPM</div>
+        </div>
+        <div class="vc-range">NORMAL · 60–100 BPM</div>
+        <canvas class="vc-chart" id="chart-hr"></canvas>
+        <div class="vc-badge ok" id="badge-hr">OK</div>
+      </div>
+
+      <!-- Blood Pressure -->
+      <div class="vital-card" id="card-bp">
+        <div class="vc-label">BLOOD PRESSURE</div>
+        <div class="vc-value-row">
+          <div class="vc-value" id="val-bp">120/80</div>
+          <div class="vc-unit">mmHg</div>
+        </div>
+        <div class="vc-range">NORMAL · &lt;140/90 mmHg</div>
+        <canvas class="vc-chart" id="chart-bp"></canvas>
+        <div class="vc-badge ok" id="badge-bp">OK</div>
+      </div>
+
+      <!-- SpO2 -->
+      <div class="vital-card" id="card-spo2">
+        <div class="vc-label">SpO2 OXYGEN</div>
+        <div class="vc-value-row">
+          <div class="vc-value" id="val-spo2">98</div>
+          <div class="vc-unit">%</div>
+        </div>
+        <div class="vc-range">NORMAL · ≥95%</div>
+        <canvas class="vc-chart" id="chart-spo2"></canvas>
+        <div class="vc-badge ok" id="badge-spo2">OK</div>
+      </div>
+
+      <!-- Temperature -->
+      <div class="vital-card" id="card-temp">
+        <div class="vc-label">TEMPERATURE</div>
+        <div class="vc-value-row">
+          <div class="vc-value" id="val-temp">36.8</div>
+          <div class="vc-unit">°C</div>
+        </div>
+        <div class="vc-range">NORMAL · 36.0–37.5 °C</div>
+        <canvas class="vc-chart" id="chart-temp"></canvas>
+        <div class="vc-badge ok" id="badge-temp">OK</div>
+      </div>
+
+      <!-- Respiratory Rate -->
+      <div class="vital-card" id="card-resp">
+        <div class="vc-label">RESPIRATORY RATE</div>
+        <div class="vc-value-row">
+          <div class="vc-value" id="val-resp">16</div>
+          <div class="vc-unit">br/min</div>
+        </div>
+        <div class="vc-range">NORMAL · 12–20 br/min</div>
+        <canvas class="vc-chart" id="chart-resp"></canvas>
+        <div class="vc-badge ok" id="badge-resp">OK</div>
+      </div>
+
+      <!-- Placeholder -->
+      <div class="vital-card" style="justify-content:center;align-items:center;opacity:.3;font-size:9px;letter-spacing:3px;color:var(--text3)">
+        + MORE VITALS
+      </div>
+
+      <!-- ECG Waveform -->
+      <div class="ecg-card">
+        <div class="ecg-header">
+          <div class="ecg-label">ECG WAVEFORM</div>
+          <div class="ecg-bpm">LEAD II</div>
+          <div style="font-size:9px;color:var(--text3);letter-spacing:1px;margin-left:auto">25 mm/s · 10 mm/mV</div>
+        </div>
+        <canvas id="ecg-canvas" style="width:100%;height:70px"></canvas>
+      </div>
+
+    </div><!-- /vitals-grid -->
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- Active Alerts -->
+      <div>
+        <div class="sb-section-label">ACTIVE ALERTS</div>
+        <div class="alert-list" id="alert-list">
+          <div class="no-alerts" id="no-alerts-msg">No active alerts</div>
+        </div>
+      </div>
+
+      <!-- Trends -->
+      <div>
+        <div class="sb-section-label">TREND (LAST 5 MIN)</div>
+        <div class="trend-list">
+          <div class="trend-row"><span class="trend-name">Heart Rate</span>  <span class="trend-val" id="trend-hr"   style="color:var(--green)">72 <span class="trend-arrow stable">→</span></span></div>
+          <div class="trend-row"><span class="trend-name">Systolic BP</span> <span class="trend-val" id="trend-bp"   style="color:var(--green)">120 <span class="trend-arrow stable">→</span></span></div>
+          <div class="trend-row"><span class="trend-name">SpO2</span>        <span class="trend-val" id="trend-spo2" style="color:var(--green)">98% <span class="trend-arrow stable">→</span></span></div>
+          <div class="trend-row"><span class="trend-name">Temperature</span> <span class="trend-val" id="trend-temp" style="color:var(--green)">36.8 <span class="trend-arrow stable">→</span></span></div>
+          <div class="trend-row"><span class="trend-name">Resp. Rate</span>  <span class="trend-val" id="trend-resp" style="color:var(--green)">16 <span class="trend-arrow stable">→</span></span></div>
+        </div>
+      </div>
+
+      <!-- Call Staff -->
+      <div>
+        <div class="sb-section-label">CALL STAFF</div>
+        <div class="staff-grid">
+          <div class="staff-card" id="sc-doc" onclick="callStaff('doc')">
+            <div class="staff-icon doc">&#9874;</div>
+            <div class="staff-name">DOCTOR</div>
+            <div class="staff-status avail" id="ss-doc">AVAILABLE</div>
+          </div>
+          <div class="staff-card" id="sc-nur" onclick="callStaff('nur')">
+            <div class="staff-icon nur">&#10010;</div>
+            <div class="staff-name">NURSE</div>
+            <div class="staff-status avail" id="ss-nur">AVAILABLE</div>
+          </div>
+          <div class="staff-card" id="sc-sup" onclick="callStaff('sup')">
+            <div class="staff-icon sup">&#9881;</div>
+            <div class="staff-name">SUPPORT</div>
+            <div class="staff-status avail" id="ss-sup">AVAILABLE</div>
+          </div>
+          <div class="staff-card" id="sc-emer" onclick="callStaff('emer')">
+            <div class="staff-icon emer">&#9888;</div>
+            <div class="staff-name">EMERGENCY</div>
+            <div class="staff-status avail" id="ss-emer">STANDBY</div>
+          </div>
+        </div>
+        <div class="call-log" id="call-log"></div>
+      </div>
+
+      <!-- Simulate Scenario (collapsible) -->
+      <div>
+        <div class="collapsible-header" onclick="toggleSimulate()">
+          <div class="sb-section-label" style="margin-bottom:0">SIMULATE SCENARIO</div>
+          <i class="toggle-icon" id="sim-toggle-icon">&#9660;</i>
+        </div>
+        <div class="collapsible-body" id="sim-body">
+          <div class="controls">
+            <button class="ctrl-btn active"     id="btn-normal"   onclick="setScenario('normal')">NORMAL VITALS</button>
+            <button class="ctrl-btn"            id="btn-tachy"    onclick="setScenario('tachy')">TACHYCARDIA</button>
+            <button class="ctrl-btn"            id="btn-hyper"    onclick="setScenario('hyper')">HYPERTENSION</button>
+            <button class="ctrl-btn"            id="btn-hypoxia"  onclick="setScenario('hypoxia')">HYPOXIA</button>
+            <button class="ctrl-btn"            id="btn-fever"    onclick="setScenario('fever')">FEVER</button>
+            <button class="ctrl-btn danger-btn" id="btn-critical" onclick="setScenario('critical')">CRITICAL EVENT</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /sidebar -->
+
+  </div><!-- /main -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>SIMULATED DATA · NOT FOR CLINICAL USE</span>
+    <span id="tick-counter">TICK: 0</span>
+    <span>WARD {{ patient.bed }} · {{ patient.ward }}</span>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+  /* ══════════════════════════════════════════════
+     CONFIGURATION
+  ══════════════════════════════════════════════ */
+  const HISTORY   = 40;    // sparkline data points
+  const UPDATE_MS = 2000;  // vitals poll interval (ms)
+  const ECG_FPS   = 50;    // ECG animation interval (ms)
+
+  /* ══════════════════════════════════════════════
+     COLOR CONSTANTS (canvas cannot read CSS vars)
+  ══════════════════════════════════════════════ */
+  const GREEN = '#00e676';
+  const AMBER = '#ffb300';
+  const RED   = '#ff4d4d';
+  const BLUE  = '#40a9ff';
+
+  /* ══════════════════════════════════════════════
+     STATE
+  ══════════════════════════════════════════════ */
+  let tick       = 0;
+  let alertLog   = [];
+  let scenario   = 'normal';
+  let prevVals   = {};
+  let ecgPhase   = 0;
+  let currentHR  = 72;   // used by ECG to reflect latest HR
+
+  const histories = { hr:[], bps:[], bpd:[], spo2:[], temp:[], resp:[] };
+
+  /* ══════════════════════════════════════════════
+     HELPERS
+  ══════════════════════════════════════════════ */
+  function colorOf(status) {
+    return status === 'danger' ? RED : status === 'warn' ? AMBER : GREEN;
+  }
+
+  function getArrow(cur, prev) {
+    if (prev === undefined || prev === null) return { sym: '→', cls: 'stable' };
+    const diff = cur - prev;
+    if (Math.abs(diff) < (cur * 0.01)) return { sym: '→', cls: 'stable' };
+    return diff > 0 ? { sym: '↑', cls: 'up' } : { sym: '↓', cls: 'down' };
+  }
+
+  /* ══════════════════════════════════════════════
+     ALERT MESSAGES (client-side labels)
+  ══════════════════════════════════════════════ */
+  const alertMsgs = {
+    hr:   { warn:'Elevated HR detected',          danger:'Critical HR — tachycardia'     },
+    bp:   { warn:'Elevated BP — monitor closely', danger:'Critical BP event'              },
+    spo2: { warn:'Low oxygen saturation',         danger:'Severe hypoxia detected'        },
+    temp: { warn:'Elevated temperature — fever',  danger:'Critical fever or hypothermia'  },
+    resp: { warn:'Abnormal respiratory rate',     danger:'Respiratory distress'           }
+  };
+  const alertNames = { hr:'Heart Rate', bp:'Blood Pressure', spo2:'SpO2', temp:'Temperature', resp:'Resp. Rate' };
+
+  /* ══════════════════════════════════════════════
+     ALERT MANAGEMENT
+  ══════════════════════════════════════════════ */
+  function updateAlert(vital, status) {
+    const existing = alertLog.find(a => a.vital === vital && !a.resolved);
+    if (status !== 'ok') {
+      if (!existing) {
+        alertLog.unshift({ vital, status, msg: alertMsgs[vital][status], time: new Date(), resolved: false });
+        alertLog = alertLog.slice(0, 5);
+      } else {
+        existing.status = status;
+      }
+    } else {
+      if (existing) existing.resolved = true;
+    }
+  }
+
+  function renderAlerts() {
+    const active = alertLog.filter(a => !a.resolved);
+    const list   = document.getElementById('alert-list');
+    const nm     = document.getElementById('no-alerts-msg');
+    if (active.length === 0) {
+      nm.style.display = '';
+      list.innerHTML   = '';
+      list.appendChild(nm);
+      return;
+    }
+    nm.style.display = 'none';
+    list.innerHTML = active.map(a => `
+      <div class="alert-item ${a.status}">
+        <div class="ai-title">${a.msg}</div>
+        <span class="ai-time">${a.time.toLocaleTimeString()} · ${alertNames[a.vital]}</span>
+      </div>`).join('');
+  }
+
+  /* ══════════════════════════════════════════════
+     DOM UPDATES
+  ══════════════════════════════════════════════ */
+  function setBadge(id, status) {
+    const b = document.getElementById('badge-' + id);
+    b.className   = 'vc-badge ' + status;
+    b.textContent = status.toUpperCase();
+  }
+
+  function setCardAlert(id, status) {
+    const c = document.getElementById('card-' + id);
+    c.className = 'vital-card' + (status !== 'ok' ? ' alert-' + status : '');
+  }
+
+  function setValueColor(el, status) {
+    el.style.color = colorOf(status);
+  }
+
+  /* ══════════════════════════════════════════════
+     MINI SPARKLINE CHART
+  ══════════════════════════════════════════════ */
+  function renderMiniChart(canvasId, data, color) {
+    const c = document.getElementById(canvasId);
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    c.width  = (c.offsetWidth  || 300) * window.devicePixelRatio;
+    c.height = (c.offsetHeight || 40)  * window.devicePixelRatio;
+    ctx.clearRect(0, 0, c.width, c.height);
+
+    const mn  = Math.min(...data);
+    const mx  = Math.max(...data);
+    const r   = mx - mn || 1;
+    const w   = c.width, h = c.height, pad = 4;
+
+    ctx.beginPath();
+    data.forEach((v, i) => {
+      const x = pad + (i / (data.length - 1)) * (w - pad * 2);
+      const y = h - pad - ((v - mn) / r) * (h - pad * 2);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = 1.5 * window.devicePixelRatio;
+    ctx.stroke();
+
+    const lastX = w - pad;
+    const lastY = h - pad - ((data[data.length - 1] - mn) / r) * (h - pad * 2);
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 3 * window.devicePixelRatio, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  /* ══════════════════════════════════════════════
+     ECG WAVEFORM ANIMATION
+  ══════════════════════════════════════════════ */
+  function drawECG() {
+    const c = document.getElementById('ecg-canvas');
+    if (!c) return;
+    c.width  = c.offsetWidth  * window.devicePixelRatio;
+    c.height = c.offsetHeight * window.devicePixelRatio;
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+
+    ctx.fillStyle = '#111720';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = '#1a2c1a';
+    ctx.lineWidth   = 0.5;
+    for (let x = 0; x < W; x += W/30) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += H/5)  { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    const speed  = scenario === 'critical' ? 2.5 : scenario === 'tachy' ? 2.0 : 1.5;
+    const mid    = H / 2;
+    const period = Math.PI * 2 * 60 / currentHR;
+
+    ctx.beginPath();
+    ctx.strokeStyle = scenario === 'critical' ? RED : GREEN;
+    ctx.lineWidth   = 1.8;
+
+    for (let px = 0; px < W; px++) {
+      const phase = (ecgPhase + px * 0.04) % period;
+      const t = phase / period;
+      let y = mid;
+      if      (t < 0.08) y = mid + Math.sin(t / 0.08 * Math.PI) * 4;
+      else if (t < 0.12) y = mid - Math.sin((t - 0.08) / 0.04 * Math.PI) * H * 0.42;
+      else if (t < 0.16) y = mid + Math.sin((t - 0.12) / 0.04 * Math.PI) * H * 0.15;
+      else if (t < 0.20) y = mid - Math.sin((t - 0.16) / 0.04 * Math.PI) * H * 0.08;
+      else if (t < 0.28) y = mid + Math.sin((t - 0.20) / 0.08 * Math.PI) * 3;
+      else               y = mid + Math.sin(t * Math.PI * 1.5) * 1.5;
+      px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+    }
+    ctx.stroke();
+    ecgPhase += speed;
+  }
+
+  /* ══════════════════════════════════════════════
+     SCENARIO SWITCH
+  ══════════════════════════════════════════════ */
+  function setScenario(s) {
+    scenario = s;
+    ['normal','tachy','hyper','hypoxia','fever','critical'].forEach(x => {
+      const btn = document.getElementById('btn-' + x);
+      btn.className = 'ctrl-btn' + (x === 'critical' ? ' danger-btn' : '');
+    });
+    const active = document.getElementById('btn-' + s);
+    active.className = 'ctrl-btn active' + (s === 'critical' ? ' danger-btn' : '');
+    alertLog = [];
+  }
+
+  /* ══════════════════════════════════════════════
+     COLLAPSIBLE SIMULATE PANEL
+  ══════════════════════════════════════════════ */
+  function toggleSimulate() {
+    const body = document.getElementById('sim-body');
+    const icon = document.getElementById('sim-toggle-icon');
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    icon.classList.toggle('open', !isOpen);
+  }
+
+  /* ══════════════════════════════════════════════
+     CALL STAFF  — posts to Flask /api/call_staff
+  ══════════════════════════════════════════════ */
+  const callTimers = {};
+
+  async function callStaff(id) {
+    const card   = document.getElementById('sc-' + id);
+    const status = document.getElementById('ss-' + id);
+    if (card.classList.contains('calling')) return;
+
+    card.classList.add('calling');
+    status.textContent = 'CALLING...';
+    status.className   = 'staff-status busy';
+
+    // Notify the Flask backend
+    let staffName = id.toUpperCase();
+    try {
+      const res  = await fetch('/api/call_staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staff_id: id })
+      });
+      const data = await res.json();
+      if (data.success) staffName = data.name;
+    } catch (e) {
+      console.warn('call_staff API error:', e);
+    }
+
+    // Log the outgoing call immediately
+    addCallEntry(`Calling ${staffName}`, id, true);
+
+    if (callTimers[id]) clearTimeout(callTimers[id]);
+    callTimers[id] = setTimeout(() => {
+      card.classList.remove('calling');
+      status.textContent = 'EN ROUTE';
+      status.className   = 'staff-status avail';
+      addCallEntry(`${staffName} notified`, id, false);
+
+      setTimeout(() => {
+        status.textContent = id === 'emer' ? 'STANDBY' : 'AVAILABLE';
+        status.className   = 'staff-status avail';
+      }, 8000);
+    }, 2500);
+  }
+
+  function addCallEntry(message, id, isCalling) {
+    const colorMap = { emer:'var(--red)', sup:'var(--amber)', doc:'var(--blue)', nur:'var(--green)' };
+    const log  = document.getElementById('call-log');
+    const now  = new Date().toLocaleTimeString('en-IN', { hour12: false });
+    const item = document.createElement('div');
+    item.className = 'call-log-item';
+    item.style.borderLeftColor = colorMap[id] || 'var(--green)';
+    item.innerHTML = `${message} <span class="cl-time">${now}</span>`;
+    log.prepend(item);
+    if (log.children.length > 4) log.removeChild(log.lastChild);
+  }
+
+  /* ══════════════════════════════════════════════
+     CLOCK
+  ══════════════════════════════════════════════ */
+  function updateClock() {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-IN', { hour12: false });
+  }
+
+  /* ══════════════════════════════════════════════
+     MAIN FETCH TICK — polls Flask /api/vitals
+  ══════════════════════════════════════════════ */
+  async function mainTick() {
+    tick++;
+    let data;
+    try {
+      const res = await fetch(`/api/vitals?scenario=${scenario}`);
+      data = await res.json();
+    } catch (e) {
+      console.warn('vitals fetch error:', e);
+      return;
+    }
+
+    // Unpack values
+    const hr   = data.hr.value;
+    const bp   = data.bp.value;
+    const bps  = data.bp.systolic;
+    const spo2 = data.spo2.value;
+    const temp = data.temp.value;
+    const resp = data.resp.value;
+
+    // Update ECG heart rate
+    currentHR = hr;
+
+    // Push to rolling histories
+    histories.hr.push(hr);     if (histories.hr.length   > HISTORY) histories.hr.shift();
+    histories.bps.push(bps);   if (histories.bps.length  > HISTORY) histories.bps.shift();
+    histories.spo2.push(spo2); if (histories.spo2.length > HISTORY) histories.spo2.shift();
+    histories.temp.push(temp); if (histories.temp.length > HISTORY) histories.temp.shift();
+    histories.resp.push(resp); if (histories.resp.length > HISTORY) histories.resp.shift();
+
+    const hrSt   = data.hr.status;
+    const bpSt   = data.bp.status;
+    const spo2St = data.spo2.status;
+    const tempSt = data.temp.status;
+    const respSt = data.resp.status;
+
+    const statuses = [hrSt, bpSt, spo2St, tempSt, respSt];
+    const overall  = statuses.includes('danger') ? 'danger' : statuses.includes('warn') ? 'warn' : 'ok';
+
+    // Display values
+    document.getElementById('val-hr').textContent   = hr;
+    document.getElementById('val-bp').textContent   = bp;
+    document.getElementById('val-spo2').textContent = spo2;
+    document.getElementById('val-temp').textContent = temp;
+    document.getElementById('val-resp').textContent = resp;
+
+    // Cards & badges
+    const cardIds = ['hr','bp','spo2','temp','resp'];
+    const sts     = [hrSt, bpSt, spo2St, tempSt, respSt];
+    cardIds.forEach((id, i) => {
+      setBadge(id, sts[i]);
+      setCardAlert(id, sts[i]);
+      setValueColor(document.getElementById('val-' + id), sts[i]);
+    });
+
+    // Alerts
+    updateAlert('hr',   hrSt);
+    updateAlert('bp',   bpSt);
+    updateAlert('spo2', spo2St);
+    updateAlert('temp', tempSt);
+    updateAlert('resp', respSt);
+    renderAlerts();
+
+    // Status pill
+    const dot  = document.getElementById('status-dot');
+    const stTx = document.getElementById('status-text');
+    dot.className    = 'status-dot' + (overall !== 'ok' ? ' ' + overall : '');
+    stTx.textContent = overall === 'danger' ? 'CRITICAL' : overall === 'warn' ? 'WARNING' : 'STABLE';
+
+    // Sparklines
+    renderMiniChart('chart-hr',   histories.hr,   colorOf(hrSt));
+    renderMiniChart('chart-bp',   histories.bps,  colorOf(bpSt));
+    renderMiniChart('chart-spo2', histories.spo2, colorOf(spo2St));
+    renderMiniChart('chart-temp', histories.temp, colorOf(tempSt));
+    renderMiniChart('chart-resp', histories.resp, colorOf(respSt));
+
+    // Trend arrows
+    const pairs = [
+      ['hr',   hr,   prevVals.hr,   hrSt,   ''],
+      ['bp',   bps,  prevVals.bps,  bpSt,   ''],
+      ['spo2', spo2, prevVals.spo2, spo2St, '%'],
+      ['temp', temp, prevVals.temp, tempSt, ''],
+      ['resp', resp, prevVals.resp, respSt, ''],
+    ];
+    pairs.forEach(([id, cur, prev, st, unit]) => {
+      const ar = getArrow(cur, prev);
+      const el = document.getElementById('trend-' + id);
+      el.innerHTML   = `${cur}${unit} <span class="trend-arrow ${ar.cls}">${ar.sym}</span>`;
+      el.style.color = colorOf(st);
+    });
+
+    prevVals = { hr, bps, spo2, temp, resp };
+    document.getElementById('tick-counter').textContent = 'TICK: ' + tick;
+  }
+
+  /* ══════════════════════════════════════════════
+     BOOT
+  ══════════════════════════════════════════════ */
+  mainTick();
+  updateClock();
+  setInterval(mainTick,   UPDATE_MS);
+  setInterval(drawECG,    ECG_FPS);
+  setInterval(updateClock, 1000);
+</script>
+</body>
+</html>
